@@ -1,9 +1,5 @@
-import 'dart:io';
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:screenshot/screenshot.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter_swipecards/flutter_swipecards.dart';
 
 void main() {
   runApp(MyApp());
@@ -32,42 +28,44 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  void onTap() async {
-    final ScreenshotController controller = ScreenshotController();
-    final image1 = await controller.captureFromWidget(
-      screen,
-      delay: const Duration(microseconds: 60),
-      pixelRatio: 4,
-    );
-
-    final file1Path = '${(await getTemporaryDirectory()).path}/meetup_details1.jpg';
-    print('File path is: $file1Path');
-    final file1 = await File(file1Path).create(recursive: true);
-    await file1.writeAsBytes(image1);
-  }
-
-  final Widget screen = Container(
-    width: 100,
-    height: 100,
-    color: Colors.red,
-    child: Text('HIII'),
-  );
+  List<Color> colors = [
+    Color(0xff124533),
+    Color(0xffff4533),
+    Color(0xff12ff33),
+    Color(0xff120ff3),
+    Color(0xff12ffff),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    print('physical size ${ui.window.physicalSize}');
-    print('pixel ratio ${ui.window.devicePixelRatio}');
-    Size logicalSize = ui.window.physicalSize / ui.window.devicePixelRatio;
-    Size imageSize = ui.window.physicalSize;
-    print('wah: ${imageSize.width / logicalSize.width}');
-
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Container(),
+      body: Container(
+        padding: EdgeInsets.all(10),
+        child: TinderSwapCard(
+          maxWidth: MediaQuery.of(context).size.width - 25 - 23,
+          maxHeight: MediaQuery.of(context).size.height - 16 - 28,
+          minWidth: MediaQuery.of(context).size.width - 25 - 25,
+          minHeight: MediaQuery.of(context).size.height - 16 - 30,
+          cardController: CardController(),
+          allowVerticalMovement: false,
+          animDuration: 600,
+          stackNum: 2,
+          totalNum: colors.length,
+          orientation: AmassOrientation.bottom,
+          swipeEdgeVertical: 4,
+          swipeEdge: 4,
+          cardBuilder: (context, index) {
+            return Container(
+              color: colors[index],
+            );
+          },
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: onTap,
+        onPressed: () {},
         child: Icon(Icons.plus_one_outlined),
       ),
     );
