@@ -1,9 +1,10 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_swipecards/flutter_swipecards.dart';
 
-void main() {
-  runApp(MyApp());
-}
+void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
   @override
@@ -13,60 +14,123 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: AsyncDataExampleHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  final String title;
-
+// support for asynchronous data events
+class AsyncDataExampleHomePage extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _AsyncDataExampleHomePageState createState() => _AsyncDataExampleHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  List<Color> colors = [
-    Color(0xff124533),
-    Color(0xffff4533),
-    Color(0xff12ff33),
-    Color(0xff120ff3),
-    Color(0xff12ffff),
+class _AsyncDataExampleHomePageState extends State<AsyncDataExampleHomePage>
+    with TickerProviderStateMixin {
+  late StreamController<List<Color>> _streamController;
+
+  List<Color> welcomeImages = [
+    Colors.black,
+    Colors.blue,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
   ];
+
+  @override
+  initState() {
+    super.initState();
+    _streamController = StreamController<List<Color>>();
+  }
+
+  void _addToStream() {
+    welcomeImages.add(Colors.pink);
+    welcomeImages.removeAt(0);
+    _streamController.add(welcomeImages);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text("asynchronous data events test"),
       ),
-      body: Container(
-        padding: EdgeInsets.all(10),
-        child: TinderSwapCard(
-          maxWidth: MediaQuery.of(context).size.width - 25 - 23,
-          maxHeight: MediaQuery.of(context).size.height - 16 - 28,
-          minWidth: MediaQuery.of(context).size.width - 25 - 25,
-          minHeight: MediaQuery.of(context).size.height - 16 - 30,
-          cardController: CardController(),
-          allowVerticalMovement: false,
-          animDuration: 600,
-          stackNum: 2,
-          totalNum: colors.length,
-          orientation: AmassOrientation.bottom,
-          swipeEdgeVertical: 4,
-          swipeEdge: 4,
-          cardBuilder: (context, index) {
-            return Container(
-              color: colors[index],
-            );
-          },
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              'Added image appears on top:',
+            ),
+            StreamBuilder<List<Color>>(
+              stream: _streamController.stream,
+              initialData: welcomeImages,
+              builder: (BuildContext context, AsyncSnapshot<List<Color>> snapshot) {
+                print('snapshot.data.length: ${snapshot.data?.length}');
+                if (snapshot.hasError) return Text('Error: ${snapshot.error}');
+                switch (snapshot.connectionState) {
+                  case ConnectionState.none:
+                    return Text('Add image');
+                  case ConnectionState.waiting:
+                  //return Text('Awaiting images...');
+                  case ConnectionState.active:
+                    print("build active");
+                    return _AsyncDataExample(context, snapshot.data!);
+                  case ConnectionState.done:
+                    return Text('\$${snapshot.data} (closed)');
+                }
+                // unreachable
+              },
+            ),
+          ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: Icon(Icons.plus_one_outlined),
+        onPressed: _addToStream,
+        tooltip: 'Add image',
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _AsyncDataExample(BuildContext context, List<Color> imageList) {
+    CardController controller; //Use this to trigger swap.
+    print(imageList.length);
+    return Center(
+      key: UniqueKey(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: TinderSwapCard(
+          orientation: AmassOrientation.top,
+          totalNum: imageList.length,
+          stackNum: 3,
+          swipeEdge: 4.0,
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+          maxHeight: MediaQuery.of(context).size.width * 0.9,
+          minWidth: MediaQuery.of(context).size.width * 0.8,
+          minHeight: MediaQuery.of(context).size.width * 0.8,
+          cardBuilder: (context, index) {
+            print("cardbuilder ${index}");
+            print("imageList length ${imageList.length}");
+            return Card(
+              color: imageList[index],
+            );
+          },
+          cardController: controller = CardController(),
+          swipeUpdateCallback: (DragUpdateDetails details, Alignment align) {
+            /// Get swiping card's alignment
+            if (align.x < 0) {
+              //Card is LEFT swiping
+            } else if (align.x > 0) {
+              //Card is RIGHT swiping
+            }
+          },
+          swipeCompleteCallback: (CardSwipeOrientation orientation, int index) {
+            if (orientation == CardSwipeOrientation.left) _addToStream();
+
+            /// Get orientation & index of swiped card!
+          },
+        ),
       ),
     );
   }

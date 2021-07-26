@@ -29,6 +29,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   flutter_swipecards: ^0.2.1
+  swipe_cards: ^0.1.0
 
 
 dev_dependencies:
